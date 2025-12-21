@@ -23,9 +23,9 @@ This will create a virtual environment and install all required packages.
 Create a `.env` file in the project root with the following variables:
 
 ```
-TARGET_ID=<group_id>           # The Roblox group ID to upload clothing to
-VALID_API_KEY=<your_api_key>   # API key for authorizing requests to this service
-ROBLOSECURITY=<cookie>         # Your Roblox roblosecurity cookie (only needed for authed APIs)
+TARGET_ID=<group_id>               # The Roblox group ID to upload clothing to
+VALID_API_KEY=<your_api_key>       # API key for authorizing requests to this service
+ROBLOSECURITY_TOKEN=<cookie>       # Your Roblox roblosecurity cookie (used only for Roblox API calls)
 ```
 
 ## ⚠️ Disclaimer
@@ -34,18 +34,27 @@ This tool uses Roblox's APIs in a way that violates their Terms of Service. Robl
 
 ## Running
 
-Start the FastAPI server:
+### Development Server
+Start the development server with hot-reload (listens on `127.0.0.1` only):
 
 ```bash
 uv run fastapi dev src/main.py
 ```
 
-The server will run on `http://localhost:8000` by default.
-
-## Usage
-
-Make authenticated requests using the `x-api-key` header:
+### Production Server
+Start the production server (listens on `0.0.0.0`:
 
 ```bash
-curl -H "x-api-key: your_api_key" http://localhost:8000/asset/{asset_id}
+uv run fastapi run src/main.py
+```
+
+The server will run on port 8000 by default.
+
+## Project Structure
+
+```
+src/
+├── main.py       # FastAPI application and endpoints
+├── models.py     # Data models for Roblox assets and creators
+└── utils/        # Utility modules for Roblox API interactions
 ```

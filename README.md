@@ -2,6 +2,11 @@
 
 A FastAPI service for reuploading clothing assets to Roblox groups, used in *Filoxen Research Facilities*. This app fetches clothing from existing Roblox assets and reuploads them to a target group.
 
+## Disclaimer
+
+This tool uses Roblox's APIs in a way that violates their Terms of Service. Roblox may moderate or ban accounts that use this. Use at your own risk.
+This is beta software with potential issues. It's generally a good idea to not run it if you do not understand the source code.
+
 ## Prerequisites
 
 - Python 3.13+
@@ -27,10 +32,6 @@ TARGET_ID=<group_id>           # The Roblox group ID to upload clothing to
 VALID_API_KEY=<your_api_key>   # API key for authorizing requests to this service
 ROBLOSECURITY=<cookie>         # Your Roblox roblosecurity cookie (only needed for authed APIs)
 ```
-
-## ⚠️ Disclaimer
-
-This tool uses Roblox's APIs in a way that violates their Terms of Service. Roblox may moderate or ban accounts that use this. Use at your own risk.
 
 ## Running
 

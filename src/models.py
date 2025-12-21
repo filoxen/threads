@@ -67,7 +67,7 @@ class ClothingAsset(RbxAsset):
             asset_type=asset_type,
         )
 
-    def get_image(self) -> bytes:
+    async def get_image(self) -> bytes:
         from utils import roblox_service
 
-        return roblox_service.fetch_clothing_image(self)
+        return await roblox_service.fetch_clothing_image(self)

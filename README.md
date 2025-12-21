@@ -38,10 +38,10 @@ ROBLOSECURITY=<cookie>         # Your Roblox roblosecurity cookie (only needed f
 Start the FastAPI server:
 
 ```bash
-uv run fastapi dev src/main.py
+uv run fastapi run src/main.py
 ```
 
-The server will run on `http://localhost:8000` by default.
+The server will run on `http://0.0.0.0:8000` by default.
 
 ## Usage
 

@@ -6,7 +6,7 @@ A FastAPI service for reuploading clothing assets to Roblox groups, used in *Fil
 
 - Python 3.13+
 - `uv` (install from [astral.sh/uv](https://astral.sh/uv))
-- Valid Roblox `roblosecurity` cookie in your environment
+- Valid Roblox `ROBLOSECURITY` cookie in your environment
 
 ## Installation
 
@@ -45,7 +45,7 @@ uv run fastapi dev src/main.py
 ```
 
 ### Production Server
-Start the production server (listens on `0.0.0.0`:
+Start the production server (listens on `0.0.0.0`):
 
 ```bash
 uv run fastapi run src/main.py

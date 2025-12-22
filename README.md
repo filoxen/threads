@@ -26,7 +26,10 @@ Create a `.env` file in the project root with the following variables:
 TARGET_ID=<group_id>               # The Roblox group ID to upload clothing to
 VALID_API_KEY=<your_api_key>       # API key for authorizing requests to this service
 ROBLOSECURITY_TOKEN=<cookie>       # Your Roblox roblosecurity cookie (used only for Roblox API calls)
+PUBLISHER_USER_ID=<user_id>        # The Roblox user ID associated with the ROBLOSECURITY_TOKEN
 ```
+
+**Important:** `PUBLISHER_USER_ID` must match the user ID of the account that owns the `ROBLOSECURITY_TOKEN`.
 
 ## ⚠️ Disclaimer
 

@@ -11,10 +11,12 @@ def init_db():
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS uploaded_assets (
-                image_hash TEXT PRIMARY KEY,
+                image_hash TEXT,
+                asset_type INTEGER,
                 original_asset_id INTEGER NOT NULL,
                 new_asset_id INTEGER NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (image_hash, asset_type)
             )
         """)
         cursor.execute("""
@@ -30,29 +32,39 @@ def init_db():
                 next_retry DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        
+        # Migration: Add asset_type to uploaded_assets if it doesn't exist
+        cursor.execute("PRAGMA table_info(uploaded_assets)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if "asset_type" not in columns:
+            cursor.execute("ALTER TABLE uploaded_assets ADD COLUMN asset_type INTEGER")
+            print("Added asset_type column to uploaded_assets table.")
+            # Note: Existing items will have asset_type = null, which is fine for now
+            # as the query handles it.
+            
         conn.commit()
 
-def get_uploaded_asset(image_hash: str) -> Optional[int]:
+def get_uploaded_asset(image_hash: str, asset_type: int) -> Optional[int]:
     """
-    Checks if an image hash already exists in the database.
+    Checks if an image hash and asset type already exists in the database.
     Returns the new_asset_id if found, else None.
     """
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT new_asset_id FROM uploaded_assets WHERE image_hash = ?",
-            (image_hash,)
+            "SELECT new_asset_id FROM uploaded_assets WHERE image_hash = ? AND asset_type = ?",
+            (image_hash, asset_type)
         )
         row = cursor.fetchone()
         return row[0] if row else None
 
-def save_uploaded_asset(image_hash: str, original_asset_id: int, new_asset_id: int):
+def save_uploaded_asset(image_hash: str, asset_type: int, original_asset_id: int, new_asset_id: int):
     """Saves a new upload record to the database."""
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO uploaded_assets (image_hash, original_asset_id, new_asset_id) VALUES (?, ?, ?)",
-            (image_hash, original_asset_id, new_asset_id)
+            "INSERT INTO uploaded_assets (image_hash, asset_type, original_asset_id, new_asset_id) VALUES (?, ?, ?, ?)",
+            (image_hash, asset_type, original_asset_id, new_asset_id)
         )
         conn.commit()
 

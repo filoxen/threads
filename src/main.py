@@ -117,10 +117,10 @@ async def reupload_asset(asset_id: int, _: str = Depends(verify_api_key)):
         
         async with upload_locks[image_hash]:
             # Double-check database inside the lock
-            existing_new_id = database.get_uploaded_asset(image_hash)
+            existing_new_id = database.get_uploaded_asset(image_hash, asset.asset_type)
             
             if existing_new_id:
-                print(f"Asset already uploaded (hash match): {existing_new_id}")
+                print(f"Asset already uploaded (hash and type match): {existing_new_id}")
                 return {"uploaded": {"asset_id": existing_new_id}}
 
             # Prepare description with original URL
@@ -137,7 +137,7 @@ async def reupload_asset(asset_id: int, _: str = Depends(verify_api_key)):
             new_asset_id = uploaded.get("asset_id")
             if new_asset_id:
                 # Save to database
-                database.save_uploaded_asset(image_hash, asset_id, new_asset_id)
+                database.save_uploaded_asset(image_hash, asset.asset_type, asset_id, new_asset_id)
                 
                 try:
                     onsale = await roblox_service.onsale_asset(

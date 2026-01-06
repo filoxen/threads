@@ -9,16 +9,54 @@ def init_db():
     """Initializes the database and creates the necessary table."""
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS uploaded_assets (
-                image_hash TEXT,
-                asset_type INTEGER,
-                original_asset_id INTEGER NOT NULL,
-                new_asset_id INTEGER NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (image_hash, asset_type)
-            )
-        """)
+        
+        # Check if we need to migrate uploaded_assets
+        cursor.execute("PRAGMA table_info(uploaded_assets)")
+        columns = {col[1]: col for col in cursor.fetchall()}
+        
+        # If the table exists and image_hash is the sole PK, migrate it
+        # col[5] is the 'pk' indicator in PRAGMA table_info
+        if "image_hash" in columns and columns["image_hash"][5] == 1 and ("asset_type" not in columns or columns["asset_type"][5] == 0):
+            print("Migrating uploaded_assets to composite primary key...")
+            
+            # 1. Rename old table
+            cursor.execute("ALTER TABLE uploaded_assets RENAME TO uploaded_assets_old")
+            
+            # 2. Create new table
+            cursor.execute("""
+                CREATE TABLE uploaded_assets (
+                    image_hash TEXT,
+                    asset_type INTEGER,
+                    original_asset_id INTEGER NOT NULL,
+                    new_asset_id INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (image_hash, asset_type)
+                )
+            """)
+            
+            # 3. Copy data (defaulting old records to Shirt type = 11 if unknown)
+            cursor.execute("""
+                INSERT INTO uploaded_assets (image_hash, asset_type, original_asset_id, new_asset_id, created_at)
+                SELECT image_hash, COALESCE(asset_type, 11), original_asset_id, new_asset_id, created_at
+                FROM uploaded_assets_old
+            """)
+            
+            # 4. Drop old table
+            cursor.execute("DROP TABLE uploaded_assets_old")
+            print("Migration complete.")
+        else:
+            # Standard creation if not exists
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS uploaded_assets (
+                    image_hash TEXT,
+                    asset_type INTEGER,
+                    original_asset_id INTEGER NOT NULL,
+                    new_asset_id INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (image_hash, asset_type)
+                )
+            """)
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS onsale_queue (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,16 +70,6 @@ def init_db():
                 next_retry DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
-        # Migration: Add asset_type to uploaded_assets if it doesn't exist
-        cursor.execute("PRAGMA table_info(uploaded_assets)")
-        columns = [column[1] for column in cursor.fetchall()]
-        if "asset_type" not in columns:
-            cursor.execute("ALTER TABLE uploaded_assets ADD COLUMN asset_type INTEGER")
-            print("Added asset_type column to uploaded_assets table.")
-            # Note: Existing items will have asset_type = null, which is fine for now
-            # as the query handles it.
-            
         conn.commit()
 
 def get_uploaded_asset(image_hash: str, asset_type: int) -> Optional[int]:

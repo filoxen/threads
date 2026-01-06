@@ -25,11 +25,19 @@ Create a `.env` file in the project root with the following variables:
 ```
 TARGET_ID=<group_id>               # The Roblox group ID to upload clothing to
 VALID_API_KEY=<your_api_key>       # API key for authorizing requests to this service
-ROBLOSECURITY_TOKEN=<cookie>       # Your Roblox roblosecurity cookie (used only for Roblox API calls)
-PUBLISHER_USER_ID=<user_id>        # The Roblox user ID associated with the ROBLOSECURITY_TOKEN
+ROBLOSECURITY_TOKEN=<cookie>       # Your Roblox roblosecurity cookie
+PUBLISHER_USER_ID=<user_id>        # The Roblox user ID for the cookie
+DISCORD_WEBHOOK_URL=<url>          # (Optional) Discord webhook for upload notifications
 ```
 
 **Important:** `PUBLISHER_USER_ID` must match the user ID of the account that owns the `ROBLOSECURITY_TOKEN`.
+
+## Features
+
+- **Duplicate Prevention**: Uses SHA256 image hashing and a local SQLite database to prevent re-uploading the same item twice.
+- **Race Condition Protection**: Uses asynchronous locking to ensure simultaneous requests for the same image don't trigger multiple uploads.
+- **Discord Notifications**: Sends a rich embed to Discord whenever an asset is successfully uploaded.
+- **Metadata Preservation**: Automatically appends a link to the original Roblox asset in the new asset's description.
 
 ## ⚠️ Disclaimer
 
@@ -57,7 +65,11 @@ The server will run on port 8000 by default.
 
 ```
 src/
-├── main.py       # FastAPI application and endpoints
-├── models.py     # Data models for Roblox assets and creators
-└── utils/        # Utility modules for Roblox API interactions
+├── main.py        # FastAPI application and endpoints
+├── models.py      # Data models for Roblox assets
+├── database.py    # SQLite database layer for duplicate tracking
+└── utils/         # Utility modules
+    ├── roblox_service.py
+    ├── hashing.py
+    └── discord.py
 ```

@@ -19,7 +19,61 @@ if TARGET is None:
 if not VALID_API_KEY:
     raise EnvironmentError("VALID_API_KEY is missing from environment.")
 
-app = FastAPI()
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Start background task
+    task = asyncio.create_task(process_onsale_queue())
+    yield
+    # Cleanup
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+app = FastAPI(lifespan=lifespan)
+
+# Retry Configuration
+RETRY_INTERVAL = int(os.getenv("RETRY_INTERVAL_SECONDS", 60))
+RETRY_DELAY = int(os.getenv("RETRY_DELAY_SECONDS", 300))
+
+async def process_onsale_queue():
+    """Background task to retry failed onsale attempts."""
+    while True:
+        try:
+            pending_items = database.get_pending_onsale_items()
+            for item in pending_items:
+                print(f"Retrying onsale for asset {item['asset_id']} (Attempt {item['retry_count'] + 1})")
+                try:
+                    await roblox_service.onsale_asset(
+                        item["asset_id"],
+                        item["name"],
+                        item["description"],
+                        item["group_id"],
+                    )
+                    database.remove_from_onsale_queue(item["id"])
+                    print(f"Successfully put asset {item['asset_id']} on sale via queue.")
+                    
+                    # Send Discord notification on successful retry
+                    await discord.send_upload_webhook(
+                        item["name"], 
+                        item["original_asset_id"], 
+                        item["asset_id"], 
+                        item["asset_type"]
+                    )
+                except roblox_service.RateLimitError:
+                    print(f"Rate limit hit again for asset {item['asset_id']}, backing off.")
+                    database.increment_retry_onsale(item["id"], delay_seconds=RETRY_DELAY)
+                except Exception as e:
+                    print(f"Unexpected error retrying asset {item['asset_id']}: {e}")
+                    database.increment_retry_onsale(item["id"], delay_seconds=RETRY_DELAY * 2)
+            
+            await asyncio.sleep(RETRY_INTERVAL)
+        except Exception as e:
+            print(f"Error in background queue task: {e}")
+            await asyncio.sleep(RETRY_INTERVAL)
 
 api_key_header = APIKeyHeader(name="x-api-key")
 
@@ -85,14 +139,31 @@ async def reupload_asset(asset_id: int, _: str = Depends(verify_api_key)):
                 # Save to database
                 database.save_uploaded_asset(image_hash, asset_id, new_asset_id)
                 
-                onsale = await roblox_service.onsale_asset(
-                    new_asset_id,
-                    asset.name,
-                    new_description,
-                    int(TARGET),
-                )
+                try:
+                    onsale = await roblox_service.onsale_asset(
+                        new_asset_id,
+                        asset.name,
+                        new_description,
+                        int(TARGET),
+                    )
+                except roblox_service.RateLimitError:
+                    print(f"Rate limit hit for asset {new_asset_id}, adding to retry queue.")
+                    asset_type_name = "Shirt" if asset.asset_type == models.RbxAssetType.SHIRT else "Pants"
+                    database.add_to_onsale_queue(
+                        new_asset_id,
+                        asset_id, # original
+                        asset.name,
+                        new_description,
+                        int(TARGET),
+                        asset_type_name
+                    )
+                    return {
+                        "uploaded": uploaded,
+                        "onsale": "queued",
+                        "info": "Rate limit hit, item will be put on sale automatically later."
+                    }
                 
-                # Send Discord notification
+                # Send Discord notification (only for successful initial onsale)
                 asset_type_name = "Shirt" if asset.asset_type == models.RbxAssetType.SHIRT else "Pants"
                 await discord.send_upload_webhook(
                     asset.name, asset_id, new_asset_id, asset_type_name

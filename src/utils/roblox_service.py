@@ -11,7 +11,7 @@ import models
 
 load_dotenv()
 
-# Constants
+# Constants and State
 
 ROBLOSECURITY = os.getenv("ROBLOSECURITY_TOKEN")
 
@@ -38,13 +38,35 @@ CSRF_HEADERS = {
 
 CSRF_COOKIES = {".ROBLOSECURITY": ROBLOSECURITY}
 
-CSRF_URL = "https://apis.roblox.com/assets/user-auth/v1/assets"
+# Proxy configuration
+ROBLOX_PROXY = os.getenv("ROBLOX_PROXY")
 
-ASSET_DELIVERY_BASE_URL = "https://assetdelivery.roblox.com/v1/asset/?id={asset_id}"
 
-ECONOMY_BASE_URL = "https://economy.roblox.com/v2/assets/{asset_id}/details"
+def _proxy_url(url: str) -> str:
+    """Redirect roblox.com URLs to a proxy if configured."""
+    if not ROBLOX_PROXY:
+        return url
+    return url.replace("roblox.com", ROBLOX_PROXY)
 
-UPLOAD_URL = "https://apis.roblox.com/assets/user-auth/v1/assets"
+
+CSRF_URL = _proxy_url("https://apis.roblox.com/assets/user-auth/v1/assets")
+
+ASSET_DELIVERY_BASE_URL = _proxy_url(
+    "https://assetdelivery.roblox.com/v1/asset/?id={asset_id}"
+)
+
+ECONOMY_BASE_URL = _proxy_url("https://economy.roblox.com/v2/assets/{asset_id}/details")
+
+UPLOAD_URL = _proxy_url("https://apis.roblox.com/assets/user-auth/v1/assets")
+
+# Custom Exceptions
+
+
+class RateLimitError(Exception):
+    """Raised when hitting Roblox rate limits (HTTP 429)."""
+
+    pass
+
 
 # Client instance for connection pooling
 _client = None
@@ -200,6 +222,10 @@ async def upload_clothing_image(
         },
         cookies=CSRF_COOKIES,
     )
+
+    if response.status_code == 429:
+        raise RateLimitError("Rate limit hit during upload")
+
     response.raise_for_status()
     data = response.json()
 
@@ -210,7 +236,7 @@ async def upload_clothing_image(
         for attempt in range(max_tries):
             await asyncio.sleep(wait_time)
             op_response = await client.get(
-                f"https://apis.roblox.com/assets/user-auth/v1/operations/{operation_id}",
+                _proxy_url(f"https://apis.roblox.com/assets/user-auth/v1/operations/{operation_id}"),
                 headers={"X-CSRF-TOKEN": csrf},
                 cookies=CSRF_COOKIES,
             )
@@ -254,7 +280,7 @@ async def onsale_asset(
     }
     client = _get_client()
     response = await client.post(
-        "https://itemconfiguration.roblox.com/v1/collectibles",
+        _proxy_url("https://itemconfiguration.roblox.com/v1/collectibles"),
         json=data,
         headers={
             "X-CSRF-TOKEN": csrf,
@@ -264,4 +290,9 @@ async def onsale_asset(
         },
         cookies=CSRF_COOKIES,
     )
+
+    if response.status_code == 429:
+        raise RateLimitError("Rate limit hit during onsale")
+
     response.raise_for_status()
+    return response.json()

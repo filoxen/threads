@@ -32,17 +32,6 @@ DISCORD_WEBHOOK_URL=<url>          # (Optional) Discord webhook for upload notif
 
 **Important:** `PUBLISHER_USER_ID` must match the user ID of the account that owns the `ROBLOSECURITY_TOKEN`.
 
-## Features
-
-- **Duplicate Prevention**: Uses SHA256 image hashing and a local SQLite database to prevent re-uploading the same item twice.
-- **Race Condition Protection**: Uses asynchronous locking to ensure simultaneous requests for the same image don't trigger multiple uploads.
-- **Discord Notifications**: Sends a rich embed to Discord whenever an asset is successfully uploaded.
-- **Metadata Preservation**: Automatically appends a link to the original Roblox asset in the new asset's description.
-
-## ⚠️ Disclaimer
-
-This tool uses Roblox's APIs in a way that violates their Terms of Service. Roblox may moderate or ban accounts that use this. Use at your own risk.
-
 ## Running
 
 ### Development Server

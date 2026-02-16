@@ -1,5 +1,5 @@
 [project]
-name = "clothing-upload-bot"
+name = "threads"
 version = "0.1.0"
 description = "Bot used as part of Filoxen Research Facilities to automatically upload clothing"
 readme = "README.md"

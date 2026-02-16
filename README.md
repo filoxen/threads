@@ -1,4 +1,4 @@
-# clothing-upload-bot
+# Threads
 
 A FastAPI service for reuploading clothing assets to Roblox groups, used in *Filoxen Research Facilities*. This app fetches clothing from existing Roblox assets and reuploads them to a target group.
 

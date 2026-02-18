@@ -174,6 +174,7 @@ async def reupload_asset(asset_id: int, _: str = Depends(verify_api_key)):
                     image_hash, asset.asset_type, asset_id, new_asset_id
                 )
 
+                await asyncio.sleep(5)
                 try:
                     await roblox.onsale_asset(
                         new_asset_id,

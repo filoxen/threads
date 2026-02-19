@@ -49,16 +49,3 @@ uv run fastapi run src/main.py
 ```
 
 The server will run on port 8000 by default.
-
-## Project Structure
-
-```
-src/
-├── main.py        # FastAPI application and endpoints
-├── models.py      # Data models for Roblox assets
-├── database.py    # SQLite database layer for duplicate tracking
-└── utils/         # Utility modules
-    ├── roblox_service.py
-    ├── hashing.py
-    └── discord.py
-```

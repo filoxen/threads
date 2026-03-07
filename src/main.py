@@ -202,7 +202,9 @@ async def reupload_asset(asset_id: int, _: str = Depends(verify_api_key)):
                 )
 
                 await asyncio.sleep(5)
-                collectible_item_id = await roblox_onsale.get_collectible_item_id(new_asset_id)
+                collectible_item_id = await roblox_onsale.publish_collectible(
+                    new_asset_id, int(TARGET), asset.name, new_description
+                )
                 try:
                     await roblox_onsale.onsale_asset(collectible_item_id)
                 except RateLimitError:

@@ -521,14 +521,14 @@ wheels = [
 
 [[package]]
 name = "rbx-upload"
-version = "0.2.0"
+version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e6/8b/e6ae9359dac11572d1445d01cf513746ed4c1c5e42f531fa3e9038fa245e/rbx_upload-0.2.0.tar.gz", hash = "sha256:76955559c1e886c4373dc4a4e59e4328dcc4a8abce4c041f3064cd5e9186501c", size = 11578, upload-time = "2026-02-18T20:47:06.978Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a2/84/c74c03eb47e8d83ef9c42439c1ee473565f793cf1e5a4c34c8f1ad141ac0/rbx_upload-0.2.1.tar.gz", hash = "sha256:43867f5edd227dc7c7aa1d6992758cac46763094550007bb7c7212559235ebb8", size = 24243, upload-time = "2026-03-07T17:39:26.079Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/8a/7348c40e4056bb446b83b9015f7fba65281547e7ca750a9bd99bd4e8e86b/rbx_upload-0.2.0-py3-none-any.whl", hash = "sha256:23d7b5a8585286c834fa9187d311407d8bdfa1fcf484d2a555695510682e5030", size = 6810, upload-time = "2026-02-18T20:47:05.62Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/75/98de5d7ee1f4fc6e0e93c99aa136e87757d126c6298952e21fb8c30aae69/rbx_upload-0.2.1-py3-none-any.whl", hash = "sha256:a5a54b0cc63d78e9d875d93debedbdc57af6683cff79228192559ff91daf2d14", size = 19180, upload-time = "2026-03-07T17:39:24.945Z" },
 ]
 
 [[package]]

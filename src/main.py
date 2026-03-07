@@ -97,12 +97,8 @@ async def process_onsale_queue():
                     f"Retrying onsale for asset {item['asset_id']} (Attempt {item['retry_count'] + 1})"
                 )
                 try:
-                    await roblox_onsale.onsale_asset(
-                        item["asset_id"],
-                        item["name"],
-                        item["description"],
-                        item["group_id"],
-                    )
+                    collectible_item_id = item["collectible_item_id"] or await roblox_onsale.get_collectible_item_id(item["asset_id"])
+                    await roblox_onsale.onsale_asset(collectible_item_id)
                     database.remove_from_onsale_queue(item["id"])
                     print(
                         f"Successfully put asset {item['asset_id']} on sale via queue."
@@ -206,13 +202,9 @@ async def reupload_asset(asset_id: int, _: str = Depends(verify_api_key)):
                 )
 
                 await asyncio.sleep(5)
+                collectible_item_id = await roblox_onsale.get_collectible_item_id(new_asset_id)
                 try:
-                    await roblox_onsale.onsale_asset(
-                        new_asset_id,
-                        asset.name,
-                        new_description,
-                        int(TARGET),
-                    )
+                    await roblox_onsale.onsale_asset(collectible_item_id)
                 except RateLimitError:
                     print(
                         f"Rate limit hit for asset {new_asset_id}, adding to retry queue."
@@ -227,6 +219,7 @@ async def reupload_asset(asset_id: int, _: str = Depends(verify_api_key)):
                         new_description,
                         int(TARGET),
                         asset_type_name,
+                        collectible_item_id,
                     )
                     return {
                         "uploaded": uploaded,

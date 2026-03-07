@@ -66,10 +66,15 @@ def init_db():
                 description TEXT NOT NULL,
                 group_id INTEGER NOT NULL,
                 asset_type TEXT NOT NULL,
+                collectible_item_id TEXT,
                 retry_count INTEGER DEFAULT 0,
                 next_retry DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        try:
+            cursor.execute("ALTER TABLE onsale_queue ADD COLUMN collectible_item_id TEXT")
+        except sqlite3.OperationalError:
+            pass
         conn.commit()
 
 def get_uploaded_asset(image_hash: str, asset_type: int) -> Optional[int]:
@@ -96,13 +101,13 @@ def save_uploaded_asset(image_hash: str, asset_type: int, original_asset_id: int
         )
         conn.commit()
 
-def add_to_onsale_queue(asset_id: int, original_asset_id: int, name: str, description: str, group_id: int, asset_type: str):
+def add_to_onsale_queue(asset_id: int, original_asset_id: int, name: str, description: str, group_id: int, asset_type: str, collectible_item_id: str | None = None):
     """Adds an asset to the onsale retry queue."""
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO onsale_queue (asset_id, original_asset_id, name, description, group_id, asset_type) VALUES (?, ?, ?, ?, ?, ?)",
-            (asset_id, original_asset_id, name, description, group_id, asset_type)
+            "INSERT INTO onsale_queue (asset_id, original_asset_id, name, description, group_id, asset_type, collectible_item_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (asset_id, original_asset_id, name, description, group_id, asset_type, collectible_item_id)
         )
         conn.commit()
 

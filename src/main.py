@@ -17,6 +17,10 @@ ROBLOSECURITY = os.getenv("ROBLOSECURITY_TOKEN")
 PUBLISHER_USER_ID = os.getenv("PUBLISHER_USER_ID")
 ROBLOX_PROXY = os.getenv("ROBLOX_PROXY")
 
+# Optional separate account for onsaling (falls back to upload account)
+ONSALE_ROBLOSECURITY = os.getenv("ONSALE_ROBLOSECURITY_TOKEN", ROBLOSECURITY)
+ONSALE_PUBLISHER_USER_ID = os.getenv("ONSALE_PUBLISHER_USER_ID", PUBLISHER_USER_ID)
+
 if TARGET is None:
     raise EnvironmentError("TARGET_ID is missing from environment.")
 if not VALID_API_KEY:
@@ -33,17 +37,44 @@ RETRY_INTERVAL = int(os.getenv("RETRY_INTERVAL_SECONDS", 60))
 RETRY_DELAY = int(os.getenv("RETRY_DELAY_SECONDS", 300))
 
 roblox: RobloxClient
+roblox_onsale: RobloxClient
+
+_use_separate_onsale = (
+    ONSALE_ROBLOSECURITY != ROBLOSECURITY
+    or ONSALE_PUBLISHER_USER_ID != PUBLISHER_USER_ID
+)
+
+
+@asynccontextmanager
+async def _create_clients():
+    global roblox, roblox_onsale
+    if _use_separate_onsale:
+        async with RobloxClient(
+            roblosecurity=ROBLOSECURITY,
+            publisher_user_id=int(PUBLISHER_USER_ID),
+            proxy=ROBLOX_PROXY,
+        ) as upload_client, RobloxClient(
+            roblosecurity=ONSALE_ROBLOSECURITY,
+            publisher_user_id=int(ONSALE_PUBLISHER_USER_ID),
+            proxy=ROBLOX_PROXY,
+        ) as onsale_client:
+            roblox = upload_client
+            roblox_onsale = onsale_client
+            yield
+    else:
+        async with RobloxClient(
+            roblosecurity=ROBLOSECURITY,
+            publisher_user_id=int(PUBLISHER_USER_ID),
+            proxy=ROBLOX_PROXY,
+        ) as client:
+            roblox = client
+            roblox_onsale = client
+            yield
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global roblox
-    async with RobloxClient(
-        roblosecurity=ROBLOSECURITY,
-        publisher_user_id=int(PUBLISHER_USER_ID),
-        proxy=ROBLOX_PROXY,
-    ) as client:
-        roblox = client
+    async with _create_clients():
         task = asyncio.create_task(process_onsale_queue())
         yield
         task.cancel()
@@ -66,7 +97,7 @@ async def process_onsale_queue():
                     f"Retrying onsale for asset {item['asset_id']} (Attempt {item['retry_count'] + 1})"
                 )
                 try:
-                    await roblox.onsale_asset(
+                    await roblox_onsale.onsale_asset(
                         item["asset_id"],
                         item["name"],
                         item["description"],
@@ -176,7 +207,7 @@ async def reupload_asset(asset_id: int, _: str = Depends(verify_api_key)):
 
                 await asyncio.sleep(5)
                 try:
-                    await roblox.onsale_asset(
+                    await roblox_onsale.onsale_asset(
                         new_asset_id,
                         asset.name,
                         new_description,

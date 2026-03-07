@@ -204,17 +204,17 @@ async def reupload_asset(asset_id: int, _: str = Depends(verify_api_key)):
                 )
 
                 await asyncio.sleep(5)
-                collectible_item_id = await roblox_onsale.publish_collectible(
-                    new_asset_id, int(TARGET), asset.name, new_description
+                asset_type_name = (
+                    "Shirt" if asset.asset_type == RbxAssetType.SHIRT else "Pants"
                 )
                 try:
-                    await roblox_onsale.onsale_asset(collectible_item_id)
-                except RateLimitError:
-                    print(
-                        f"Rate limit hit for asset {new_asset_id}, adding to retry queue."
+                    collectible_item_id = await roblox_onsale.publish_collectible(
+                        new_asset_id, int(TARGET), asset.name, new_description
                     )
-                    asset_type_name = (
-                        "Shirt" if asset.asset_type == RbxAssetType.SHIRT else "Pants"
+                    await roblox_onsale.onsale_asset(collectible_item_id)
+                except (RateLimitError, Exception) as e:
+                    print(
+                        f"Publish/onsale failed for asset {new_asset_id}, adding to retry queue: {e}"
                     )
                     database.add_to_onsale_queue(
                         new_asset_id,
@@ -223,18 +223,15 @@ async def reupload_asset(asset_id: int, _: str = Depends(verify_api_key)):
                         new_description,
                         int(TARGET),
                         asset_type_name,
-                        collectible_item_id,
+                        None,
                     )
                     return {
                         "uploaded": uploaded,
                         "onsale": "queued",
-                        "info": "Rate limit hit, item will be put on sale automatically later.",
+                        "info": f"Publish/onsale failed, will retry automatically: {e}",
                     }
 
                 # Send Discord notification (only for successful initial onsale)
-                asset_type_name = (
-                    "Shirt" if asset.asset_type == RbxAssetType.SHIRT else "Pants"
-                )
                 await discord.send_upload_webhook(
                     asset.name, asset_id, new_asset_id, asset_type_name
                 )
